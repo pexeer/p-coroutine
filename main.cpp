@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "pcontext.h"
+#include "p/thread/pcontext.h"
 
 //extern "C" transfer_t jump_pcontext( pcontext_t const to, void * vp);
 //extern "C" pcontext_t make_pcontext( void * sp, std::size_t size, void (* fn)( transfer_t) );
@@ -26,7 +26,6 @@ char sp1[4096];
 char sp2[4096];
 
 int main() {
-  char *sp3 = (char*)malloc(4096);
   pcontext_t fc1 = make_pcontext(sp1 + sizeof(sp1), sizeof(sp1), f1);
   printf("fc1=%p\n", fc1);
   int arg  = 0;
