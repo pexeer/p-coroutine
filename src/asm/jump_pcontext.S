@@ -130,4 +130,6 @@ _jump_pcontext:
 
     /* indirect jump to context */
     jmp  *%r8
+#else
+    static_assert(false, "not supoort platform");
 #endif

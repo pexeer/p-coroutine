@@ -9,14 +9,14 @@ DEBUG=-g -ggdb
 BUILD_DIR ?= ./build
 SRC_DIRS ?= ./src
 
-SRCS := $(shell find $(SRC_DIRS) -name \*.cpp -or -name \*.c -or -name \*.s)
+SRCS := $(shell find $(SRC_DIRS) -name \*.cpp -or -name \*.c -or -name \*.S)
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
 INC_DIRS := $(shell find $(SRC_DIRS) -type d)
 INC_FLAGS := $(shell for subdir in $(INC_DIRS);do mkdir -p $(BUILD_DIR)/$${subdir}; done)
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 #CPPFLAGS=-I./include -MMD -MP
-CPPFLAGS=-I./include
+CPPFLAGS=-I./include -I../base/include/
 FINAL_ASFLAGS=$(ASFLAGS)
 FINAL_CFLAGS=$(WARNING) $(OPT) $(DEBUG) $(CFLAGS) $(CPPFLAGS)
 FINAL_CXXFLAGS=$(STD) $(WARNING) $(OPT) $(DEBUG) $(CPPFLAGS) $(CXXFLAGS) $(CFLAGS)
@@ -51,7 +51,7 @@ $(BUILD_DIR)/p-thread.a: $(OBJS)
 -include $(DEPS)
 
 # assembly
-$(BUILD_DIR)/%.s.o: %.s
+$(BUILD_DIR)/%.S.o: %.S
 	$(P_AS) -c $< -o $@
 
 # c source
@@ -63,7 +63,7 @@ $(BUILD_DIR)/%.cpp.o: %.cpp
 	$(P_CXX) -c $< -o $@
 
 # exe binary
-%.exe: $(BUILD_DIR)/%.cpp.o $(BUILD_DIR)/p-thread.a
+%.exe: $(BUILD_DIR)/%.cpp.o $(BUILD_DIR)/p-thread.a ../base/build/p-base.a
 	$(P_LINK) -o $@ $^
 
 clean:
