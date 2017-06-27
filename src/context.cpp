@@ -12,9 +12,11 @@
 namespace p {
 namespace thread {
 
+p::base::ObjectPool<ThreadContext>   g_thread_context_pool;
+
 void fProc(transfer_t x) {
     while (1) {
-        LOG_TRACE << "fProc return from jump_pcontext, fctx=" << x.fctx << ",data=" << x.data;
+        LOG_TRACE << "fProc return from jump_pcontext, fctx=" << x;
         ThreadContext* tc = static_cast<ThreadContext*>(x.data);
         tc->func_();
         x = jump_pcontext(x.fctx, tc);
@@ -24,7 +26,7 @@ void fProc(transfer_t x) {
 constexpr static uint64_t kThreadContextStackSize = 128 * 4096;
 constexpr uint64_t kSizeOfThreadContext = sizeof(ThreadContext);
 
-ThreadContext* ThreadContext::NewThreadContext() {
+ThreadContext* ThreadContext::NewThis() {
     const uint64_t real_stack_size = ((kThreadContextStackSize - 1) /
             base::Process::kPageSize + 1) * base::Process::kPageSize;
 
@@ -49,7 +51,7 @@ ThreadContext* ThreadContext::NewThreadContext() {
     return new(tc_address) ThreadContext(real_stack_size - kSizeOfThreadContext);
 }
 
-void ThreadContext::FreeThreadContext(ThreadContext* tc) {
+void ThreadContext::FreeThis(ThreadContext* tc) {
     char* tc_address = (char*)(tc);
     char* mem_ptr = tc_address - tc->stack_size_;
 #if defined(P_NO_STACK_GUARD)
@@ -88,7 +90,7 @@ public:
             return group_ptr_->list[group_ptr_->size];
         }
 
-        return ThreadContext::NewThreadContext();
+        return ThreadContext::NewThis();
     }
 
     void put(ThreadContext* tc) {
