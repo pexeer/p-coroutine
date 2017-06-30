@@ -13,8 +13,8 @@ struct transfer_t {
 extern "C" {
 #endif
 
-transfer_t jump_pcontext( pcontext_t const to, void* vp);
-pcontext_t make_pcontext( void* sp, size_t size, void (*fn)( transfer_t) );
+transfer_t jump_pcontext(pcontext_t const to, void* vp);
+pcontext_t make_pcontext(void* sp, size_t size, void (*fn)( transfer_t) );
 
 #ifdef __cplusplus
 };

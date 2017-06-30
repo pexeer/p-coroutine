@@ -31,7 +31,7 @@ int a() {
     }
 
     for (size_t i = 0;i < list.size(); ++i) {
-        list[i]->jump(f);
+        //list[i]->jump(f);
         p::thread::g_thread_context_pool.put(list[i]);
     }
 
@@ -70,13 +70,13 @@ int b() {
 }
 
 int main() {
-    for (int i = 0; i < 18; ++i) {
-        std::thread tmp(a);
-        tmp.detach();
+    std::vector<std::thread> list;
+    for (size_t i = 0; i < 20; ++i) {
+        list.push_back(std::thread(a));
     }
-
-    std::thread x(a);
-    x.join();
+    for (size_t i = 0; i < list.size(); ++i) {
+        list[i].join();
+    }
 
     std::thread tmp(b);
     tmp.join();
