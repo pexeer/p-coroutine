@@ -27,7 +27,7 @@ public:
     T*  pop() {
         std::unique_lock<std::mutex>   lock_guard(mutex_);
         if (size_ > 0) {
-            --size;
+            --size_;
             T* ret = q_.front();
             q_.pop_front();
             return ret;

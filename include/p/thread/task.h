@@ -30,11 +30,6 @@ public:
     const char      stack_guard[8] = {'T', 'A', 'S', 'K', 'T', 'A', 'S', 'K'};
 };
 
-struct JumpContext {
-    TaskHandle* from;
-    TaskHandle* to;
-};
-
 struct TaskHandle {
     uint64_t tid;
     uint64_t flag;
@@ -43,6 +38,7 @@ struct TaskHandle {
     TaskStack* task_stack = nullptr;
 public:
     typedef base::ArenaObjectPool<TaskHandle>   TaskHandleFactory;
+    typedef base::ObjectPool<TaskStack>         TaskStackFactory;
     // static method
     static TaskHandle* build() {
         uint64_t obj_id;
@@ -51,24 +47,25 @@ public:
         return ret;
     }
 
-    static void destroy(TaskHandle* obj) {
-        obj->tid += 0x100000000;
-        TaskHandleFactory::put(obj->tid);
+    static void destroy(TaskHandle* task) {
+        task->tid += 0x100000000;
+        // return task_stack
+        TaskStackFactory::put(task->task_stack);
+        task->task_stack = nullptr;
+        // return task_handle
+        TaskHandleFactory::put(task->tid);
     }
 
 public:
-    JumpContext* jump(TaskHandle* from) {
-        if (task_stack == nullptr) {
-            task_stack = base::ObjectPool<TaskStack>::get();
+    TaskHandle* jump_to(TaskHandle* next_task) {
+        if (next_task->task_stack == nullptr) {
+            next_task->task_stack = TaskStackFactory::get();
         }
-        JumpContext jump_context;
-        jump_context.from = from;
-        jump_context.to = this;
 
-        transfer_t jump_from = jump_pcontext(task_stack->pcontext, &jump_context);
-        JumpContext* tmp_context = (JumpContext*)(jump_from.data);
-        tmp_context->from->task_stack->pcontext = jump_from.fctx;
-        return tmp_context;
+        transfer_t jump_from = jump_pcontext(next_task->task_stack->pcontext, this);
+        TaskHandle* from = (TaskHandle*)(jump_from.data);
+        from->task_stack->pcontext = jump_from.fctx;
+        return from;
     }
 };
 
