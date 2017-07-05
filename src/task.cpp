@@ -10,10 +10,8 @@
 namespace p {
 namespace thread {
 
-extern void StackFunc(transfer_t jump_from);
-
 TaskStack::TaskStack(size_t size) : stack_size(size) {
-    pcontext = make_pcontext((void*)this, stack_size, StackFunc);
+    pcontext = make_pcontext((void*)this, stack_size, normal_task_func);
 }
 
 TaskStack* TaskStack::NewThis() {

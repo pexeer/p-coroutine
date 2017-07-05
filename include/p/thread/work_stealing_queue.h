@@ -35,12 +35,23 @@ public:
         return nullptr;
     }
 
-    size_t steal(T** item) {
+    void push_back(T** item, size_t size) {
+        std::unique_lock<std::mutex>   lock_guard(mutex_);
+        for (size_t i = 0; i < size; ++i) {
+            q_.push_back(item[i]);
+            ++size_;
+        }
+    }
+
+    size_t steal(T** item, size_t max_size) {
         size_t i = 0;
         if (size_ > 0) {
             std::unique_lock<std::mutex>   lock_guard(mutex_);
             if (size_ > 0) {
                 size_t size = size_ / 2;
+                if (size > max_size) {
+                    size = max_size;
+                }
                 do {
                     --size_;
                     item[i++] = q_.back();

@@ -13,6 +13,8 @@ namespace thread {
 
 struct TaskHandle;
 
+extern void normal_task_func(transfer_t jump_from);
+
 struct TaskStack {
 public:
     constexpr static size_t kTaskStackSize = 32 * 4096;
@@ -40,18 +42,20 @@ public:
     typedef base::ArenaObjectPool<TaskHandle>   TaskHandleFactory;
     typedef base::ObjectPool<TaskStack>         TaskStackFactory;
     // static method
-    static TaskHandle* build() {
+    static TaskHandle* pop() {
         uint64_t obj_id;
         TaskHandle* ret = TaskHandleFactory::get(&obj_id);
-        ret->tid = (ret->tid & 0xFFFFFFFF) + 0x100000000 + obj_id;
+        ret->tid = obj_id + 0x100000000;
         return ret;
     }
 
-    static void destroy(TaskHandle* task) {
+    static void push(TaskHandle* task) {
         task->tid += 0x100000000;
-        // return task_stack
-        TaskStackFactory::put(task->task_stack);
-        task->task_stack = nullptr;
+        if (task->task_stack) {
+            // return task_stack
+            TaskStackFactory::put(task->task_stack);
+            task->task_stack = nullptr;
+        }
         // return task_handle
         TaskHandleFactory::put(task->tid);
     }
@@ -61,11 +65,28 @@ public:
         if (next_task->task_stack == nullptr) {
             next_task->task_stack = TaskStackFactory::get();
         }
+        auto tmp = next_task->task_stack->pcontext;
+        if (next_task->tid == 12885951488) {
+            printf("fuck\n");
+        }
 
-        transfer_t jump_from = jump_pcontext(next_task->task_stack->pcontext, this);
+        LOG_INFO << "jump_to pcontext=" << tmp << ",task=" << next_task
+            << ",tid=" << next_task->tid << ",this=" << this;
+        transfer_t jump_from = jump_pcontext(tmp, this);
+        //transfer_t jump_from = jump_pcontext(next_task->task_stack->pcontext, this);
         TaskHandle* from = (TaskHandle*)(jump_from.data);
         from->task_stack->pcontext = jump_from.fctx;
+        LOG_INFO << "fillback pcontext=" << jump_from.fctx << ",task=" << from
+            << ",tid=" << from->tid;
         return from;
+    }
+
+    TaskHandle* swith_to(TaskHandle* next_task) {
+        if (next_task->task_stack == nullptr) {
+            next_task->task_stack = task_stack;
+            task_stack = nullptr;
+        }
+        return this;
     }
 };
 

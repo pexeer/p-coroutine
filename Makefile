@@ -3,9 +3,9 @@
 # Wed Sep  9 19:45:01 CST 2015
 
 STD=-std=c++11
-#WARNING=-Wall -Werror
-DEBUG=-g -ggdb
-#OPT=-O2
+WARNING=-Wall -Werror
+DEBUG=-g3
+OPT=-O2
 BUILD_DIR ?= ./build
 SRC_DIRS ?= ./src
 
