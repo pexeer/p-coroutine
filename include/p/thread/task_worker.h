@@ -33,7 +33,6 @@ public:
 
     void push_back(TaskHandle* task) {
         task_queue_.push_back(task);
-        task_manager_->signal_task();
     }
 
     TaskHandle* main_task() {
@@ -80,6 +79,8 @@ private:
 
     // shared with other thread
     P_CACHELINE_ALIGNMENT TaskQueue       task_queue_;
+
+    P_DISALLOW_COPY(TaskWorker);
 };
 
 } // end namespace thread

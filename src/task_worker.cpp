@@ -31,16 +31,16 @@ uint64_t TaskWorker::new_task(void* (*func)(void*), void* arg, uint64_t attr) {
 }
 
 inline TaskHandle* TaskWorker::dealing_with_from_task(TaskHandle* from) {
-    LOG_INFO << "dealing_with_from_task=" << from << ",tid=" << from->tid;
+    //LOG_INFO << "dealing_with_from_task=" << from << ",tid=" << from->tid;
     assert(from == cur_task_);
     cur_task_ = next_task_;
 
     if (from !=  main_task()) {
         if (from->flag == 0x3) {
-            LOG_INFO << "Task " << from->tid << " run finished";
+            //LOG_INFO << "Task " << from->tid << " run finished";
             TaskHandle::push(from);
         } else {
-            LOG_INFO << "task yield tid=" << from->tid << " task=" << from;
+            //LOG_INFO << "task yield tid=" << from->tid << " task=" << from;
             push_back(from);
         }
     }
@@ -51,8 +51,8 @@ void normal_task_func(transfer_t jump_from) {
     TaskWorker* w = TaskWorker::tls_w;
     TaskHandle* from = (TaskHandle*)(jump_from.data);
     from->task_stack->pcontext = jump_from.fctx;
-    LOG_INFO << "fillback pcontext=" << jump_from.fctx << ",task=" << from
-        << ",tid=" << from->tid;
+    //LOG_INFO << "fillback pcontext=" << jump_from.fctx << ",task=" << from
+        //<< ",tid=" << from->tid;
 
     TaskHandle* cur_task = w->dealing_with_from_task(from);
     do {
@@ -80,7 +80,7 @@ void normal_task_func(transfer_t jump_from) {
 }
 
 void TaskWorker::main_task_func() {
-    LOG_INFO << "new worker start, worker=" << (void*)this;
+    //LOG_INFO << "new worker start, worker=" << (void*)this;
     main_task_.tid = 0;
     main_task_.task_stack = &main_stack_;
     main_task_.func = nullptr;
@@ -96,7 +96,6 @@ void TaskWorker::main_task_func() {
     while (true) {
         next_task_ = task_queue_.pop();
         if (next_task_) {
-            printf("jump to task=%p\n", next_task_);
             jump_from = jump_to(next_task_);
             jump_from = dealing_with_from_task(jump_from);
             assert(jump_from == main_task());
@@ -105,13 +104,7 @@ void TaskWorker::main_task_func() {
 
         // stealing task from task_manager
         task_number = task_manager_->steal_task(task_list, 4096, &seed_);
-        if (task_number) {
-            task_queue_.push_back(task_list, task_number);
-            continue;
-        }
-
-        // waiting task
-        task_manager_->waiting_task();
+        task_queue_.push_back(task_list, task_number);
     }
 }
 

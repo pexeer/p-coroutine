@@ -30,6 +30,8 @@ public:
     const size_t    stack_size;
     void*           pcontext;
     const char      stack_guard[8] = {'T', 'A', 'S', 'K', 'T', 'A', 'S', 'K'};
+
+    P_DISALLOW_COPY(TaskStack);
 };
 
 struct TaskHandle {
@@ -37,10 +39,11 @@ struct TaskHandle {
     uint64_t flag;
     void* (*func)(void*);
     void* arg;
-    TaskStack* task_stack = nullptr;
+    TaskStack* task_stack;
 public:
     typedef base::ArenaObjectPool<TaskHandle>   TaskHandleFactory;
     typedef base::ObjectPool<TaskStack>         TaskStackFactory;
+
     // static method
     static TaskHandle* pop() {
         uint64_t obj_id;
@@ -61,23 +64,23 @@ public:
     }
 
 public:
+    TaskHandle() : func(nullptr), task_stack(nullptr) {}
+
     TaskHandle* jump_to(TaskHandle* next_task) {
         if (next_task->task_stack == nullptr) {
             next_task->task_stack = TaskStackFactory::get();
         }
-        auto tmp = next_task->task_stack->pcontext;
-        if (next_task->tid == 12885951488) {
-            printf("fuck\n");
-        }
 
-        LOG_INFO << "jump_to pcontext=" << tmp << ",task=" << next_task
-            << ",tid=" << next_task->tid << ",this=" << this;
+        auto tmp = next_task->task_stack->pcontext;
+
+        //LOG_INFO << "jump_to pcontext=" << tmp << ",task=" << next_task
+        //    << ",tid=" << next_task->tid << ",this=" << this;
         transfer_t jump_from = jump_pcontext(tmp, this);
         //transfer_t jump_from = jump_pcontext(next_task->task_stack->pcontext, this);
         TaskHandle* from = (TaskHandle*)(jump_from.data);
         from->task_stack->pcontext = jump_from.fctx;
-        LOG_INFO << "fillback pcontext=" << jump_from.fctx << ",task=" << from
-            << ",tid=" << from->tid;
+        //LOG_INFO << "fillback pcontext=" << jump_from.fctx << ",task=" << from
+        //    << ",tid=" << from->tid;
         return from;
     }
 
@@ -88,6 +91,9 @@ public:
         }
         return this;
     }
+
+private:
+    P_DISALLOW_COPY(TaskHandle);
 };
 
 } // end namespace thread

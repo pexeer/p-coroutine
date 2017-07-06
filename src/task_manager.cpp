@@ -24,36 +24,30 @@ void TaskManager::add_task_worker() {
 }
 
 size_t TaskManager::steal_task(TaskHandle* dest[], size_t max_size, size_t* seed) {
-    size_t const worker_size = worker_size_;
-    if (worker_size <= 1) {
+    size_t worker_size = worker_size_;
+    if (worker_size < 1) {
         return 0;
     }
 
-    size_t offset = 0;
-    do {
-        offset = base::fast_rand(worker_size);
-    } while (offset && ((worker_size % offset) == 0));
-
+    size_t offset = 1;
     size_t ret = 0;
-    for (size_t i = 0; i < worker_size; ++i, *seed += offset) {
-        TaskWorker* worker = worker_list_[*seed % worker_size];
-        ret = worker->steal_task(dest, max_size);
-        if (ret) {
-            return ret;
+
+    while (true) {
+        worker_size = worker_size_;
+
+        uint64_t signal_pending = signal_pending_;
+        for (size_t i = 0; i < worker_size; ++i, *seed += offset) {
+            //LOG_WARN << "steal " << (*seed % worker_size) << ", offset=" << offset;
+            TaskWorker* worker = worker_list_[*seed % worker_size];
+            ret = worker->steal_task(dest, max_size);
+            if (ret) {
+                return ret;
+            }
         }
+        waiting_task(signal_pending);
     }
 
     return ret;
-}
-
-void TaskManager::signal_task() {
-    std::unique_lock<std::mutex>    lock_gaurd(mutex_);
-    condition_.notify_one();
-}
-
-void TaskManager::waiting_task() {
-    std::unique_lock<std::mutex>    lock_gaurd(mutex_);
-    condition_.wait(lock_gaurd);
 }
 
 uint64_t TaskManager::new_task(void* (*func)(void*), void* arg, uint64_t attr) {
@@ -62,7 +56,11 @@ uint64_t TaskManager::new_task(void* (*func)(void*), void* arg, uint64_t attr) {
         size_t const worker_size = worker_size_;
         w = worker_list_[base::fast_rand(worker_size)];
     }
-    return w->new_task(func, arg, attr);
+    uint64_t tid = w->new_task(func, arg, attr);
+    if (tid) {
+        signal_task(1);
+    }
+    return tid;
 }
 
 } // end namespace thread

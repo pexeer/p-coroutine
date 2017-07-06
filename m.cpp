@@ -14,13 +14,16 @@ void* func(void * arg) {
         LOG_INFO << "task=" << number << ", add new task, tid=" << tid;
     }
 
+    LOG_INFO << "task=" << number << ", sleep";
+    sleep(1);
+
     LOG_INFO << "task=" << number << ", fnished";
 
     return nullptr;
 }
 
 int main() {
-    p::thread::TaskManager tm(5);
+    p::thread::TaskManager tm(4);
     g_tm = &tm;
 
 //    tm.add_task_worker();
@@ -29,7 +32,7 @@ int main() {
     LOG_INFO << "add new task, tid=" << tid;
 
     sleep(10);
-//    tm.signal_task();
+//  tm.signal_task();
     sleep(1000);
     return 0;
 }
