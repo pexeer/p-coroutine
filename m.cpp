@@ -1,9 +1,9 @@
-#include "p/thread/task_manager.h"
+#include "p/thread/worker_manager.h"
 #include "p/base/logging.h"
 #include <unistd.h>
 
 
-p::thread::TaskManager* g_tm;
+p::thread::WorkerManager* g_tm;
 
 void* func(void * arg) {
     uint64_t number = (uint64_t)arg;
@@ -23,7 +23,7 @@ void* func(void * arg) {
 }
 
 int main() {
-    p::thread::TaskManager tm(4);
+    p::thread::WorkerManager tm(4);
     g_tm = &tm;
 
 //    tm.add_task_worker();
@@ -31,7 +31,10 @@ int main() {
     uint64_t tid = tm.new_task(func, (void*)(3), 0);
     LOG_INFO << "add new task, tid=" << tid;
 
-    sleep(10);
+    sleep(3);
+    LOG_INFO << "add task worker";
+    tm.add_task_worker();
+    tm.signal_task(10);
 //  tm.signal_task();
     sleep(1000);
     return 0;

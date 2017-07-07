@@ -11,7 +11,7 @@ namespace p {
 namespace thread {
 
 template<typename T>
-class WorkStealingQueue {
+class StealingQueue {
 public:
     size_t size() const {
         return size_;

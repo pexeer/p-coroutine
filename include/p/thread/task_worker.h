@@ -6,19 +6,23 @@
 #include <atomic>
 #include <thread>
 #include "p/thread/task.h"
-#include "p/thread/task_manager.h"
-#include "p/thread/work_stealing_queue.h"
+#include "p/thread/worker_manager.h"
+#include "p/thread/stealing_queue.h"
 
 namespace p {
 namespace thread {
 
-class TaskManager;
+class WorkerManager;
 
 class TaskWorker {
 public:
-    TaskWorker(TaskManager* m);
+    TaskWorker(WorkerManager* m, uint64_t worker_id);
 
     ~TaskWorker() {
+    }
+
+    uint64_t worker_id() const {
+        return worker_id_;
     }
 
     uint64_t new_task(void* (*func)(void*), void* arg, uint64_t attr);
@@ -27,9 +31,11 @@ public:
         return task_queue_.pop();
     }
 
-    size_t steal_task(TaskHandle** item, size_t max_size) {
+    size_t steal(TaskHandle* item[], size_t max_size) {
         return task_queue_.steal(item, max_size);
     }
+
+    size_t steal_task(TaskHandle* item[], size_t max_size);
 
     void push_back(TaskHandle* task) {
         task_queue_.push_back(task);
@@ -60,7 +66,7 @@ public:
 
     friend void StackFunc(transfer_t jump_from);
 
-    typedef WorkStealingQueue<TaskHandle>   TaskQueue;
+    typedef StealingQueue<TaskHandle>   TaskQueue;
 public:
     static bool running_in_worker() {
         return tls_w != nullptr;
@@ -68,18 +74,21 @@ public:
 
     static thread_local TaskWorker*      tls_w;
 private:
-    TaskManager*    task_manager_;
+    WorkerManager*  worker_manager_;
+    uint64_t        worker_id_;
     TaskHandle      main_task_;
     TaskStack       main_stack_;
     TaskHandle*     next_task_;
     TaskHandle*     cur_task_;
-    size_t          seed_;
+
+    std::vector<TaskWorker*>    worker_list_;
+    size_t                      seed_;
 
     std::thread     thread_;
 
     // shared with other thread
     P_CACHELINE_ALIGNMENT TaskQueue       task_queue_;
-
+private:
     P_DISALLOW_COPY(TaskWorker);
 };
 

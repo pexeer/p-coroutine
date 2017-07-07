@@ -2,15 +2,17 @@
 // Licensed under a BSD-style license that can be found in the LICENSE file.
 
 #include "p/thread/task_worker.h"
-#include "p/thread/task_manager.h"
+#include "p/thread/worker_manager.h"
 #include "p/base/rand.h"
+#include <random>       // std::default_random_engine
 
 namespace p {
 namespace thread {
 
 thread_local TaskWorker* TaskWorker::tls_w = nullptr;
 
-TaskWorker::TaskWorker(TaskManager* m) : task_manager_(m) {
+TaskWorker::TaskWorker(WorkerManager* m, uint64_t worker_id)
+    : worker_manager_(m), worker_id_(worker_id) {
     seed_ = base::fast_rand();
 
     thread_ = std::move(std::thread(&TaskWorker::main_task_func, this));
@@ -79,6 +81,48 @@ void normal_task_func(transfer_t jump_from) {
     } while (true);
 }
 
+size_t TaskWorker::steal_task(TaskHandle* item[], size_t max_size) {
+    assert(this == tls_w);
+
+    while (true) {
+        uint64_t signal_pending = worker_manager_->signal_pending();
+        uint64_t worker_size = worker_manager_->worker_size();
+        if UNLIKELY(worker_list_.size() != worker_size) {
+            TaskWorker* const* worker_list = worker_manager_->worker_list();
+            for (size_t i = worker_list_.size(); i < worker_size; ++i) {
+                worker_list_.push_back(worker_list[i]);
+                size_t j = base::fast_rand(i + 1);
+                // swap worker_list(j, i)
+                TaskWorker* w = worker_list_[j];
+                worker_list_[j] = worker_list_[i];
+                worker_list_[i] = w;
+            }
+            /*
+            for (size_t i = worker_list_.size(); i < worker_size; ++i) {
+                worker_list_.push_back(worker_list[i]);
+            }
+            assert(worker_list_.size() == worker_size);
+            std::shuffle (worker_list_.begin (), worker_list_.end (), std::default_random_engine(seed_));
+
+            LOG_WARN << "current_work_list=" << base::noflush;
+            for (size_t i = 0; i < worker_list_.size(); ++i) {
+                LOG_WARN << ',' << worker_list_[i]->worker_id() << base::noflush;
+            }
+            LOG_WARN << '.';
+            */
+        }
+
+        for (size_t i = 0; i < worker_size; ++i) {
+            TaskWorker* worker = worker_list_[++seed_ % worker_size];
+            size_t ret = worker->steal(item, max_size);
+            if (ret) {
+                return ret;
+            }
+        }
+        worker_manager_->waiting_task(signal_pending);
+    }
+}
+
 void TaskWorker::main_task_func() {
     //LOG_INFO << "new worker start, worker=" << (void*)this;
     main_task_.tid = 0;
@@ -103,7 +147,7 @@ void TaskWorker::main_task_func() {
         }
 
         // stealing task from task_manager
-        task_number = task_manager_->steal_task(task_list, 4096, &seed_);
+        task_number = steal_task(task_list, 4096);
         task_queue_.push_back(task_list, task_number);
     }
 }
