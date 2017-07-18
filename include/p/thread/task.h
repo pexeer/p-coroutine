@@ -35,7 +35,7 @@ public:
     P_DISALLOW_COPY(TaskStack);
 };
 
-struct TaskHandle {
+struct P_CACHELINE_ALIGNMENT TaskHandle {
     uint64_t tid;
     uint64_t flag;
     void* (*func)(void*);
@@ -96,29 +96,6 @@ public:
 private:
     P_DISALLOW_COPY(TaskHandle);
 };
-
-#if defined(P_OS_LINUX)
-#include <sys/syscall.h>
-#include <linux/futex.h>
-
-inline long sys_futex(void *addr1,
-        int op,
-        int val1,
-        struct timespec *timeout,
-        void *addr2,
-        int val3) {
-    return syscall(SYS_futex, addr1, op, val1, timeout, addr2, val3);
-}
-
-inline int futex_wait(int *uaddr, int expected, const struct timespec *timeout) {
-    return syscall(SYS_futex, uaddr, FUTEX_WAIT_PRIVATE, expected, timeout, nullptr, 0);
-}
-
-inline int futex_wake(int *uaddr, int wake_num) {
-    return syscall(SYS_futex, uaddr, FUTEX_WAKE_PRIVATE, wake_num, nullptr, nullptr, 0);
-}
-
-#endif
 
 } // end namespace thread
 } // end namespace p

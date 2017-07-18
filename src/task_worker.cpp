@@ -15,7 +15,9 @@ TaskWorker::TaskWorker(WorkerManager* m, uint64_t worker_id)
     : worker_manager_(m), worker_id_(worker_id) {
     seed_ = base::fast_rand();
 
-    thread_ = std::move(std::thread(&TaskWorker::main_task_func, this));
+    if (worker_id) {
+        thread_ = std::move(std::thread(&TaskWorker::main_task_func, this));
+    }
 }
 
 uint64_t TaskWorker::new_task(void* (*func)(void*), void* arg, uint64_t attr) {
@@ -119,7 +121,7 @@ size_t TaskWorker::steal_task(TaskHandle* item[], size_t max_size) {
                 return ret;
             }
         }
-        worker_manager_->waiting_task(signal_pending);
+        worker_manager_->futex_wait(signal_pending);
     }
 }
 

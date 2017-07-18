@@ -9,6 +9,7 @@ namespace p {
 namespace thread {
 
 WorkerManager::WorkerManager(int work_number) : worker_size_{0} {
+    add_task_worker();
     for (int i = 0; i < work_number; ++i) {
         add_task_worker();
     }
@@ -24,12 +25,12 @@ void WorkerManager::add_task_worker() {
 uint64_t WorkerManager::new_task(void* (*func)(void*), void* arg, uint64_t attr) {
     TaskWorker* w = TaskWorker::tls_w;
     if (!w) {
-        size_t const worker_size = worker_size_.load(std::memory_order_release);
+        size_t const worker_size = worker_size_.load(std::memory_order_acquire);
         w = worker_list_[base::fast_rand(worker_size)];
     }
     uint64_t tid = w->new_task(func, arg, attr);
     if (tid) {
-        signal_task(1);
+        futex_wake(1);
     }
     return tid;
 }

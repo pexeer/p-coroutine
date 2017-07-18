@@ -60,6 +60,10 @@ public:
         return dealing_with_from_task(cur_task_);
     }
 
+    TaskHandle* cur_task() const {
+        return cur_task_;
+    }
+
     TaskHandle* dealing_with_from_task(TaskHandle* from);
 
     void main_task_func();

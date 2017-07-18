@@ -8,6 +8,7 @@
 #include <condition_variable>    // std::condition_variable
 #include "p/base/macros.h"
 #include "p/base/logging.h"
+#include "p/base/port.h"
 #include "p/thread/task.h"
 
 namespace p {
@@ -36,29 +37,29 @@ public:
         return worker_list_;
     }
 
-    uint64_t signal_pending() const {
+    int signal_pending() const {
         return signal_pending_.load(std::memory_order_acquire);
     }
 
-    void signal_task(int number) {
+    void futex_wake(int signal_number) {
 #if !defined(P_OS_LINUX)
         std::unique_lock<std::mutex>    lock_gaurd(mutex_);
         condition_.notify_one();
-        signal_pending_ += number;
+        signal_pending_ += signal_number;
 #else
-        signal_pending_.fetch_add(number, std::memory_order_release);
-        futex_wake((int*)&signal_pending_, number);
+        signal_pending_.fetch_add(signal_number, std::memory_order_release);
+        p::base::futex_wake((int*)&signal_pending_, signal_number);
 #endif
     }
 
-    void waiting_task(uint64_t signal_pending) {
+    void futex_wait(int signal_pending) {
 #if !defined(P_OS_LINUX)
         std::unique_lock<std::mutex>    lock_gaurd(mutex_);
         if (signal_pending == signal_pending_) {
             condition_.wait(lock_gaurd);
         }
 #else
-        futex_wait((int*)&signal_pending_, signal_pending_, nullptr);
+        p::base::futex_wait((int*)&signal_pending_, signal_pending_, nullptr);
 #endif
     }
 
@@ -73,7 +74,8 @@ private:
 
     std::mutex                  add_worker_mutex_;
 
-    P_CACHELINE_ALIGNMENT std::atomic<uint64_t>       signal_pending_;
+    // shared with other thread
+    P_CACHELINE_ALIGNMENT std::atomic<int>       signal_pending_;
 private:
     P_DISALLOW_COPY(WorkerManager);
 };
