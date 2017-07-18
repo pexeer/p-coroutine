@@ -15,7 +15,7 @@ namespace p {
 namespace thread {
 
 class TaskWorker;
-class TaskHandle;
+struct TaskHandle;
 
 class WorkerManager {
 public:

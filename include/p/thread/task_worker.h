@@ -5,6 +5,7 @@
 
 #include <atomic>
 #include <thread>
+#include <vector>
 #include "p/thread/task.h"
 #include "p/thread/worker_manager.h"
 #include "p/thread/stealing_queue.h"

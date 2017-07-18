@@ -20,7 +20,7 @@ CPPFLAGS=-I./include -I../base/include/
 FINAL_ASFLAGS=$(ASFLAGS)
 FINAL_CFLAGS=$(WARNING) $(OPT) $(DEBUG) $(CFLAGS) $(CPPFLAGS)
 FINAL_CXXFLAGS=$(STD) $(WARNING) $(OPT) $(DEBUG) $(CPPFLAGS) $(CXXFLAGS) $(CFLAGS)
-FINAL_LDFLAGS=$(LDFLAGS)  $(DEBUG)
+FINAL_LDFLAGS=$(LDFLAGS)
 FINAL_LIBS=-lm -ldl -pthread
 
 CCCOLOR="\033[34m"
@@ -40,7 +40,7 @@ endif
 P_AS=$(QUIET_C)$(CC) $(FINAL_ASFLAGS)
 P_CC=$(QUIET_C)$(CC) $(FINAL_CFLAGS)
 P_CXX=$(QUIET_CXX)$(CXX) $(FINAL_CXXFLAGS)
-P_LINK=$(QUIET_LINK)$(CXX) $(FINAL_LDFLAGS) $(FINAL_LIBS)
+P_LINK=$(QUIET_LINK)$(CXX) -Wno-unused-command-line-argument $(FINAL_LDFLAGS) $(FINAL_LIBS)
 P_AR=$(QUIET_AR)$(AR) crs
 
 .PHONY: all clean
@@ -65,7 +65,7 @@ $(BUILD_DIR)/%.cpp.o: %.cpp
 
 # exe binary
 %.exe: $(BUILD_DIR)/%.cpp.o $(BUILD_DIR)/p-thread.a ../base/build/p-base.a
-	$(P_LINK) -o $@ $^
+	$(P_LINK) $^ -o $@
 
 clean:
 	$(RM) -r $(BUILD_DIR)

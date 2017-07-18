@@ -34,7 +34,7 @@ int main() {
     sleep(3);
     LOG_INFO << "add task worker";
     tm.add_task_worker();
-    tm.signal_task(10);
+    tm.futex_wake(10);
 //  tm.signal_task();
     sleep(1000);
     return 0;

@@ -16,7 +16,7 @@ TaskWorker::TaskWorker(WorkerManager* m, uint64_t worker_id)
     seed_ = base::fast_rand();
 
     if (worker_id) {
-        thread_ = std::move(std::thread(&TaskWorker::main_task_func, this));
+        thread_ = std::thread(&TaskWorker::main_task_func, this);
     }
 }
 
