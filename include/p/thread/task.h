@@ -48,7 +48,7 @@ public:
     // static method
     static TaskHandle* pop() {
         uint64_t obj_id;
-        TaskHandle* ret = TaskHandleFactory::get(&obj_id);
+        TaskHandle* ret = TaskHandleFactory::acquire(&obj_id);
         ret->tid = obj_id + 0x100000000;
         return ret;
     }
@@ -57,11 +57,11 @@ public:
         task->tid += 0x100000000;
         if (task->task_stack) {
             // return task_stack
-            TaskStackFactory::put(task->task_stack);
+            TaskStackFactory::release(task->task_stack);
             task->task_stack = nullptr;
         }
         // return task_handle
-        TaskHandleFactory::put(task->tid);
+        TaskHandleFactory::release(task->tid);
     }
 
 public:
@@ -69,7 +69,7 @@ public:
 
     TaskHandle* jump_to(TaskHandle* next_task) {
         if (next_task->task_stack == nullptr) {
-            next_task->task_stack = TaskStackFactory::get();
+            next_task->task_stack = TaskStackFactory::acquire();
         }
 
         auto tmp = next_task->task_stack->pcontext;
