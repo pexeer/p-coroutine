@@ -5,7 +5,5 @@
 
 class Thread {
 public:
-
 private:
-
 };
